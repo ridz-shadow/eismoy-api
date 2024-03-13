@@ -38,31 +38,22 @@ export default async function handler(req, res) {
 
       // Verify token
       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Extract user's role
       const userRole = decodedToken.role;
 
       // Check if user role is not admin or editor
       if (userRole !== 'admin' && userRole !== 'editor') {
         return res.status(403).json({ message: 'Forbidden' });
-        }
-
-      const db = await connectToDatabase();
-
-      // Get the latest user document to determine the next userid
-      const latesCat = await db.collection('scroll').find().sort({ cat_id: -1 }).limit(1).toArray();
-      let nextCatId = 1;
-
-      if (latesCat.length > 0) {
-        nextCatId = latesCat[0].cat_id + 1;
       }
 
+      const db = connectToDatabase();
+
       // Create category
-      await db.collection('scroll').insertOne({
-        scroll_id: nextCatId,
+      await db.collection('scroll').add({
         title,
         scroll_status: scrollStatus
-    });
+      });
 
       res.status(201).json({ message: 'Scroll created successfully' });
     } catch (error) {
