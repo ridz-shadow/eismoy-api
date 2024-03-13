@@ -47,11 +47,11 @@ export default async function handler(req, res) {
                 return res.status(403).json({ message: 'Forbidden' });
             }
 
-            const db = await connectToDatabase();
+            const db = connectToDatabase();
 
 
             // Create category
-            await db.collection('featured_news').insertOne({
+            await db.collection('featured_news').add({
                 newsId1,
                 newsId2,
                 newsId3,

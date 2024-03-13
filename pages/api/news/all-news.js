@@ -35,37 +35,37 @@ export default async function handler(req, res) {
       const skip = (parseInt(page) - 1) * parseInt(limit); // Calculate the number of documents to skip
 
       // Fetch all user details from the database
-      const db = await connectToDatabase();
+      const db = connectToDatabase();
 
       let categories;
       let totalCount;
 
-      const query = {};
+      let query = db.collection('news');
 
       if (decodedToken.role === 'reporter') {
-        const user = await db.collection('users').findOne({ userid: decodedToken.userId });
-        const displayName = user.display_name;
+        const user = await db.collection('users').doc(decodedToken.userId);
+        const { displayName } = user.data();
 
-        query.created_by = displayName;
+        query = query.where('created_by', '==', displayName);
       }
 
       // Apply search filter for all fields
       if (search) {
-        const searchRegex = new RegExp(search, 'i');
         const searchFields = ['title', 'category', 'reporter_name', 'publish_status', 'created_by', 'published_by', 'last_modified_by', 'created_datetime', 'published_datetime', 'modified_datetime'];
-        query.$or = searchFields.map((field) => ({ [field]: { $regex: searchRegex } }));
+        searchFields.forEach((field) => { query = query.where(field, '>=', search).where(field, '<=', search + '\uf8ff'); });
       }
 
       // Fetch categories based on the query and apply sorting
-      categories = await db.collection('news')
-        .find(query)
-        .sort({ [sortColumn]: sortOrder === 'asc' ? 1 : -1 }) // Apply sorting here
-        .skip(skip)
+      const querySnapshot = await query
+        .orderBy(sortColumn, sortOrder === 'asc' ? 'asc' : 'desc')
+        .offset(skip)
         .limit(parseInt(limit))
-        .toArray();
+        .get();
+
+      categories = querySnapshot.docs.map(doc => doc.data())
 
       // Count total matching documents for pagination
-      totalCount = await db.collection('news').countDocuments(query);
+      totalCount = querySnapshot.size;
 
       res.status(200).json({ categories, totalCount });
     } catch (error) {
