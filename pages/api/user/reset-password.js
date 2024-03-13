@@ -11,20 +11,20 @@ export default async function handler(req, res) {
     }
 
     try {
-      const db = await connectToDatabase();
+      const db = connectToDatabase();
 
       // Find user by forget password token
-      const user = await db.collection('users').findOne({ forget_password_token: token });
-      if (!user) {
+      const users = await db.collection('users').where('forget_password_token', '==', token).get();
+
+      if (users.docs.length < 1) {
         return res.status(404).json({ message: 'Invalid or expired token' });
       }
 
+      const user = { id: users.docs[0].id, ...users.docs[0].data() };
+
       // Update user's password
       const hashedPassword = await bcrypt.hash(password, 10);
-      await db.collection('users').updateOne({ _id: user._id }, { $set: { password: hashedPassword } });
-
-      // Clear forget password token
-      await db.collection('users').updateOne({ _id: user._id }, { $set: { forget_password_token: null } });
+      await db.collection('users').doc(user.id).update({ password: hashedPassword, forget_password_token: null });
 
       res.status(200).json({ message: 'Password reset successfully' });
     } catch (error) {

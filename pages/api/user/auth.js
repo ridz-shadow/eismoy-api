@@ -41,10 +41,10 @@ export default async function handler(req, res) {
       }
 
       // Check if user exists in the database
-      const db = await connectToDatabase();
-      const user = await db.collection('users').findOne({ userid: userId });
+      const db = connectToDatabase();
+      const user = await db.collection('users').doc(userId).get();
 
-      if (!user) {
+      if (!user.exists) {
         // If user does not exist, user is not authenticated
         console.error('user is not available');
         return res.status(401).json({ authenticated: false });

@@ -36,7 +36,7 @@ export default async function handler(req, res) {
 
       // Verify token
       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Extract user's role
       const userRole = decodedToken.role;
 
@@ -45,12 +45,12 @@ export default async function handler(req, res) {
         return res.status(403).json({ message: 'Forbidden' });
       }
 
-      const db = await connectToDatabase();
+      const db = connectToDatabase();
 
       // Check if user exists
-      const existingUser = await db.collection('users').findOne({ userid: userid });
+      const existingUser = await db.collection('users').doc(userid).get();
 
-      if (!existingUser) {
+      if (!existingUser.exists) {
         return res.status(404).json({ message: 'User not found' });
       }
 
@@ -70,12 +70,7 @@ export default async function handler(req, res) {
       }
 
       // Update user
-      await db.collection('users').updateOne(
-        { userid: userid },
-        {
-          $set: updateData
-        }
-      );
+      await db.collection('users').doc(userid).update(updateData);
 
       res.status(200).json({ message: 'User updated successfully' });
     } catch (error) {

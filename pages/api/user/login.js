@@ -24,14 +24,16 @@ export default async function handler(req, res) {
     const { email, password } = req.body;
 
     try {
-      const db = await connectToDatabase();
+      const db = connectToDatabase();
 
       // Find user by email
-      const user = await db.collection('users').findOne({ email });
+      const users = await db.collection('users').where('email', '==', email).get();
 
-      if (!user) {
+      if (users.docs.length < 1) {
         return res.status(401).json({ message: 'Invalid Credentials' });
       }
+
+      const user = { id: users.docs[0].id, ...users.docs[0].data() };
 
       // Check password
       const isMatch = await bcrypt.compare(password, user.password);
@@ -41,7 +43,7 @@ export default async function handler(req, res) {
       }
 
       // Generate token with userid instead of _id
-      const token = jwt.sign({ userId: user.userid, role: user.role }, process.env.JWT_SECRET, {
+      const token = jwt.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, {
         expiresIn: '1d',
       });
 

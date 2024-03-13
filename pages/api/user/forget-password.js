@@ -7,14 +7,16 @@ export default async function handler(req, res) {
     const { email, resetUrl } = req.body;
 
     try {
-      const db = await connectToDatabase();
+      const db = connectToDatabase();
 
       // Check if email exists in the database
-      const user = await db.collection('users').findOne({ email });
+      const users = await db.collection('users').where('email', '==', email).get();
 
-      if (!user) {
+      if (users.docs.length < 1) {
         return res.status(404).json({ message: 'User not found' });
       }
+
+      const user = { id: users.docs[0].id, ...users.docs[0].data() };
 
       // Generate forget password token
       const token = jwt.sign({ email }, process.env.JWT_SECRET, {
@@ -22,7 +24,7 @@ export default async function handler(req, res) {
       });
 
       // Update user record with forget password token
-      await db.collection('users').updateOne({ email }, { $set: { forget_password_token: token } });
+      await db.collection('users').doc(user.id).update({ forget_password_token: token });
 
       // Send email with forget password link
       const resetLink = `${resetUrl}/${token}`;

@@ -39,7 +39,7 @@ export default async function handler(req, res) {
 
       // Verify token
       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Extract user's role
       const userRole = decodedToken.role;
 
@@ -48,24 +48,16 @@ export default async function handler(req, res) {
         return res.status(403).json({ message: 'Forbidden' });
       }
 
-      const db = await connectToDatabase();
-
-      // Get the latest user document to determine the next userid
-      const latestUser = await db.collection('users').find().sort({ userid: -1 }).limit(1).toArray();
-      let nextUserId = 1;
-
-      if (latestUser.length > 0) {
-        nextUserId = latestUser[0].userid + 1;
-      }
+      const db = connectToDatabase();
 
       // Check if user exists
-      const existingUser = await db.collection('users').findOne({ email });
-      const existingUser2 = await db.collection('users').findOne({ display_name });
+      const existingUser = await db.collection('users').where('email', '==', email).get();
+      const existingUser2 = await db.collection('users').where('display_name', '==', display_name).get();
 
-      if (existingUser) {
+      if (existingUser.docs.length > 0) {
         return res.status(400).json({ message: 'User already exists' });
       }
-      if (existingUser2) {
+      if (existingUser2.docs.length > 0) {
         return res.status(400).json({ message: 'Display Name already exists' });
       }
 
@@ -73,8 +65,7 @@ export default async function handler(req, res) {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create user
-      await db.collection('users').insertOne({
-        userid: nextUserId,
+      await db.collection('users').add({
         name,
         email,
         password: hashedPassword,

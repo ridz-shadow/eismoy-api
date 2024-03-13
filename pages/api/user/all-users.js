@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     res.status(200).end(); // Respond with 200 status code for preflight requests
     return;
   }
-  
+
   if (req.method === 'GET') {
     // Parse token from request cookies
     const token = req.cookies.token;
@@ -26,16 +26,23 @@ export default async function handler(req, res) {
     try {
       // Verify token
       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Check if user role is admin
       if (decodedToken.role !== 'admin') {
         return res.status(403).json({ message: 'Forbidden' });
       }
 
       // Fetch all user details from the database
-      const db = await connectToDatabase();
-      const users = await db.collection('users').find({}, { projection: { _id: 0, password: 0, forget_password_token: 0 } }).toArray(); // Exclude _id, password, and forget_password_token fields
-      
+      const db = connectToDatabase();
+      const usersSnapshot = await db.collection('users').get();
+
+      const users = usersSnapshot.docs.map(user => {
+        const userData = user.data();
+        delete userData.password;
+        delete userData.forget_password_token;
+        return userData;
+      });
+
       res.status(200).json(users);
     } catch (error) {
       console.error(error);
