@@ -38,43 +38,34 @@ export default async function handler(req, res) {
 
       // Verify token
       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Extract user's role
       const userRole = decodedToken.role;
 
       // Check if user role is not admin or editor
-      if (decodedToken.role !== 'admin' && decodedToken.role !== 'editor') {
+      if (userRole !== 'admin' && userRole !== 'editor') {
         return res.status(403).json({ message: 'Forbidden' });
-        }
-
-      const db = await connectToDatabase();
-
-      // Get the latest user document to determine the next userid
-      const latesCat = await db.collection('video_categories').find().sort({ cat_id: -1 }).limit(1).toArray();
-      let nextCatId = 1;
-
-      if (latesCat.length > 0) {
-        nextCatId = latesCat[0].cat_id + 1;
       }
 
-      // Check if user exists
-      const existingCat = await db.collection('video_categories').findOne({ categoryName });
+      const db = connectToDatabase();
 
-      if (existingCat) {
+      // Check if user exists
+      const existingCat = await db.collection('video_categories').where('categoryName', '==', categoryName).get();
+
+      if (existingCat.docs.length > 0) {
         return res.status(400).json({ message: 'Category already exists' });
       }
 
       // Create category
-      await db.collection('video_categories').insertOne({
-        cat_id: nextCatId,
+      await db.collection('video_categories').add({
         categoryName,
         slug,
         parent: parent || null, // Set parent to null if it's empty
-        news_count: 0, 
+        news_count: 0,
         metaTitle,
         metaDescription,
         focusKeyword
-    });
+      });
 
       res.status(201).json({ message: 'Category created successfully' });
     } catch (error) {
