@@ -38,51 +38,51 @@ export default async function handler(req, res) {
 
       // Verify token
       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Extract user's role
       const userRole = decodedToken.role;
 
       // Check if user role is not admin or editor
       if (userRole !== 'admin' && userRole !== 'editor' && userRole !== 'reporter') {
         return res.status(403).json({ message: 'Forbidden' });
-        }
+      }
 
-        // Generate timestamps
-        const currentDateTime = new Date();
-        const createdDatetime = currentDateTime;
-        let publishedDatetime = null; // Initialize to null
-        const modifiedDatetime = null; // Initially, there is no modification
+      // Generate timestamps
+      const currentDateTime = new Date();
+      const createdDatetime = currentDateTime;
+      let publishedDatetime = null; // Initialize to null
+      const modifiedDatetime = null; // Initially, there is no modification
 
-        // If the publish_status is "published", set published_datetime to the current date and time
-        if (publish_status === "Published") {
-            publishedDatetime = currentDateTime;
-        }
+      // If the publish_status is "published", set published_datetime to the current date and time
+      if (publish_status === "Published") {
+        publishedDatetime = currentDateTime;
+      }
 
       // Create a new news item document
-        const newNewsItem = {
-            title,
-            gallery_Names,
-            featured_image,
-            category,
-            uploader_name,
-            created_by,
-            published_by,
-            last_modified_by,
-            publish_status,
-            tags,
-            meta_title,
-            meta_description,
-            meta_image,
-            focus_keyword,
-            created_datetime: createdDatetime,
-            published_datetime: publishedDatetime,
-            modified_datetime: modifiedDatetime
-        };
+      const newNewsItem = {
+        title,
+        gallery_Names,
+        featured_image,
+        category,
+        uploader_name,
+        created_by,
+        published_by,
+        last_modified_by,
+        publish_status,
+        tags,
+        meta_title,
+        meta_description,
+        meta_image,
+        focus_keyword,
+        created_datetime: createdDatetime,
+        published_datetime: publishedDatetime,
+        modified_datetime: modifiedDatetime
+      };
 
-        const db = await connectToDatabase();
+      const db = connectToDatabase();
 
-        // Insert the new news item into the MongoDB collection
-        await db.collection('photo_gallery').insertOne(newNewsItem);
+      // Insert the new news item into the MongoDB collection
+      await db.collection('photo_gallery').add(newNewsItem);
 
       res.status(201).json({ message: 'Gallery created successfully' });
     } catch (error) {

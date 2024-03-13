@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
       // Verify token
       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // Extract user's role
       const userRole = decodedToken.role;
 
@@ -44,7 +44,7 @@ export default async function handler(req, res) {
         return res.status(403).json({ message: 'Forbidden' });
       }
 
-      const db = await connectToDatabase();
+      const db = connectToDatabase();
 
       // Construct update data
       const updateData = {
@@ -58,12 +58,7 @@ export default async function handler(req, res) {
       };
 
       // Update user
-      await db.collection('gallery_categories').updateOne(
-        { cat_id: cat_id },
-        {
-          $set: updateData
-        }
-      );
+      await db.collection('gallery_categories').doc(cat_id).update(updateData);
 
       res.status(200).json({ message: 'Category updated successfully' });
     } catch (error) {

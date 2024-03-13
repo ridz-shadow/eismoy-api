@@ -44,17 +44,17 @@ export default async function handler(req, res) {
                 return res.status(400).json({ message: 'Something is wrong' });
             }
 
-            const db = await connectToDatabase();
+            const db = connectToDatabase();
 
             // Check if the user exists
-            const existingUser = await db.collection('gallery_categories').findOne({ cat_id: cat_id });
+            const existingUser = await db.collection('gallery_categories').doc(cat_id).get();
 
-            if (!existingUser) {
+            if (!existingUser.exists) {
                 return res.status(404).json({ message: 'Category not found' });
             }
 
             // Delete the user
-            await db.collection('gallery_categories').deleteOne({ cat_id: cat_id });
+            await db.collection('gallery_categories').doc(cat_id).delete();
 
             res.status(200).json({ message: 'Category deleted successfully' });
         } catch (error) {
